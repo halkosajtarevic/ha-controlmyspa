@@ -43,7 +43,7 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
     """Thermostat for one spa."""
 
     _attr_name = None
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.HEAT]
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_preset_modes = [PRESET_READY, PRESET_REST]
@@ -56,11 +56,11 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
         return is_celsius(self.dashboard)
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         return to_celsius(self.dashboard.get("currentTemp"), self._celsius)
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         return to_celsius(self.dashboard.get("desiredTemp"), self._celsius)
 
     @property
