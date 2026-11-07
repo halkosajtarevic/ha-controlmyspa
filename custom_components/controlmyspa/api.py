@@ -162,7 +162,7 @@ class ControlMySpaApi:
         """
         await self._async_request(
             "POST",
-            "/spa-command/component-state",
+            "/spa-commands/component-state",
             {
                 "state": state,
                 "deviceNumber": device_number,
