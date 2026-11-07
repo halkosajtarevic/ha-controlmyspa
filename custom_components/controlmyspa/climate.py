@@ -12,8 +12,8 @@ from homeassistant.components.climate import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import ControlMySpaCoordinator
@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 PRESET_READY = "ready"
 PRESET_REST = "rest"
 
-# Panel ranges, in Fahrenheit, straight from the dashboard's rangeLimits block.
+# Panel ranges in Fahrenheit, as reported in the dashboard's rangeLimits block.
 LOW_RANGE = (50.0, 99.0)
 HIGH_RANGE = (80.0, 104.0)
 
@@ -33,23 +33,23 @@ HIGH_RANGE = (80.0, 104.0)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up the climate entity."""
     coordinator: ControlMySpaCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([ControlMySpaClimate(coordinator)])
+    async_add_entities(
+        ControlMySpaClimate(coordinator, spa_id) for spa_id in coordinator.spa_ids
+    )
 
 
 class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
-    """Thermostat for the spa water."""
+    """Thermostat for one spa."""
 
     _attr_name = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.HEAT]
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_preset_modes = [PRESET_READY, PRESET_REST]
-    _attr_translation_key = "spa_climate"
 
-    def __init__(self, coordinator: ControlMySpaCoordinator) -> None:
-        super().__init__(coordinator, "climate")
+    def __init__(self, coordinator: ControlMySpaCoordinator, spa_id: str) -> None:
+        super().__init__(coordinator, spa_id, "climate")
 
     @property
     def _celsius(self) -> bool:
@@ -64,14 +64,16 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
         return to_celsius(self.dashboard.get("desiredTemp"), self._celsius)
 
     @property
+    def _range(self) -> tuple[float, float]:
+        return LOW_RANGE if (self.dashboard.get("tempRange") or "LOW") == "LOW" else HIGH_RANGE
+
+    @property
     def min_temp(self) -> float:
-        low, _ = LOW_RANGE if (self.dashboard.get("tempRange") or "LOW") == "LOW" else HIGH_RANGE
-        return to_celsius(low, False) or 10.0
+        return to_celsius(self._range[0], False) or 10.0
 
     @property
     def max_temp(self) -> float:
-        _, high = LOW_RANGE if (self.dashboard.get("tempRange") or "LOW") == "LOW" else HIGH_RANGE
-        return to_celsius(high, False) or 40.0
+        return to_celsius(self._range[1], False) or 40.0
 
     @property
     def target_temperature_step(self) -> float:
@@ -102,7 +104,6 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
         }
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        """Set a new target temperature."""
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
@@ -114,7 +115,6 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
         await self.coordinator.async_request_refresh()
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Switch between READY (maintain heat) and REST (heat on demand)."""
         try:
             await self.coordinator.api.async_set_heater_mode(
                 self._spa_id, preset_mode == PRESET_READY

@@ -24,8 +24,7 @@ from .const import (
     CONF_EMAIL,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
-    CONF_SPA_ID,
-    CONF_SPA_LABEL,
+    CONF_SPA_IDS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MIN_SCAN_INTERVAL,
@@ -34,8 +33,17 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _spa_label(spa: dict[str, Any]) -> str:
+    """Human-readable label: the spa's own name, otherwise its serial."""
+    alias = (spa.get("alias") or "").strip()
+    serial = (spa.get("serialNumber") or spa.get("_id") or "").strip()
+    if alias and serial:
+        return f"{alias} ({serial})"
+    return alias or serial
+
+
 class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Ask for the account once, then let the user pick a spa by CMS code."""
+    """Sign in once, then tick the spas you want in Home Assistant."""
 
     VERSION = 1
 
@@ -47,14 +55,13 @@ class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Collect credentials."""
+        """Collect account credentials."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            email = user_input[CONF_EMAIL].strip()
             api = ControlMySpaApi(
-                async_get_clientsession(self.hass),
-                user_input[CONF_EMAIL],
-                user_input[CONF_PASSWORD],
+                async_get_clientsession(self.hass), email, user_input[CONF_PASSWORD]
             )
             try:
                 await api.async_login()
@@ -70,11 +77,13 @@ class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
                 if not spas:
                     errors["base"] = "no_spas"
                 else:
-                    self._email = user_input[CONF_EMAIL]
+                    await self.async_set_unique_id(email.lower())
+                    self._abort_if_unique_id_configured()
+                    self._email = email
                     self._password = user_input[CONF_PASSWORD]
                     self._spas = spas
                     if len(spas) == 1:
-                        return await self._async_create_entry(spas[0])
+                        return self._async_create_entry_for([spas[0]["_id"]], spas[0])
                     return await self.async_step_spa()
 
         return self.async_show_form(
@@ -91,46 +100,48 @@ class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_spa(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Pick which spa to add, shown by CMS code."""
+        """Let the user tick which spas to add."""
         if user_input is not None:
-            spa_id = user_input[CONF_SPA_ID]
-            for spa in self._spas:
-                if spa["_id"] == spa_id:
-                    return await self._async_create_entry(spa)
+            selected = user_input.get(CONF_SPA_IDS) or []
+            if selected:
+                first = next(
+                    (s for s in self._spas if s["_id"] == selected[0]), self._spas[0]
+                )
+                return self._async_create_entry_for(selected, first)
 
         options = [
-            SelectOptionDict(
-                value=spa["_id"],
-                label="{} ({})".format(
-                    spa.get("cmsCode") or spa.get("serialNumber") or spa["_id"],
-                    spa.get("serialNumber") or spa["_id"],
-                ),
-            )
-            for spa in self._spas
+            SelectOptionDict(value=spa["_id"], label=_spa_label(spa)) for spa in self._spas
         ]
         return self.async_show_form(
             step_id="spa",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SPA_ID): SelectSelector(
-                        SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST)
+                    vol.Required(
+                        CONF_SPA_IDS, default=[opt["value"] for opt in options]
+                    ): SelectSelector(
+                        SelectSelectorConfig(
+                            options=options,
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
                     )
                 }
             ),
         )
 
-    async def _async_create_entry(self, spa: dict[str, Any]) -> ConfigFlowResult:
-        """Create the config entry for the chosen spa."""
-        await self.async_set_unique_id(spa["_id"])
-        self._abort_if_unique_id_configured()
-        label = spa.get("cmsCode") or spa.get("serialNumber") or spa["_id"]
+    def _async_create_entry_for(
+        self, spa_ids: list[str], primary: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Create one entry holding every selected spa."""
+        title = _spa_label(primary)
+        if len(spa_ids) > 1:
+            title = f"ControlMySpa ({len(spa_ids)} spas)"
         return self.async_create_entry(
-            title=label,
+            title=title,
             data={
                 CONF_EMAIL: self._email,
                 CONF_PASSWORD: self._password,
-                CONF_SPA_ID: spa["_id"],
-                CONF_SPA_LABEL: label,
+                CONF_SPA_IDS: spa_ids,
             },
         )
 
@@ -167,7 +178,9 @@ class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
-            description_placeholders={"email": entry.data.get(CONF_EMAIL, "") if entry else ""},
+            description_placeholders={
+                "email": entry.data.get(CONF_EMAIL, "") if entry else ""
+            },
             errors=errors,
         )
 

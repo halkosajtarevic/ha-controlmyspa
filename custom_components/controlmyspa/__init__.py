@@ -16,6 +16,7 @@ from .const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_SPA_ID,
+    CONF_SPA_IDS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     PLATFORMS,
@@ -40,9 +41,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except ControlMySpaError as err:
         raise ConfigEntryNotReady(f"Cannot reach ControlMySpa: {err}") from err
 
+    # spa_ids is the current shape; spa_id is the single-spa shape from v0.1
+    spa_ids: list[str] = list(entry.data.get(CONF_SPA_IDS) or [])
+    if not spa_ids and entry.data.get(CONF_SPA_ID):
+        spa_ids = [entry.data[CONF_SPA_ID]]
+
+    spa_meta: dict[str, dict] = {}
+    try:
+        for spa in await api.async_get_spas():
+            spa_meta[spa["_id"]] = spa
+    except ControlMySpaError as err:
+        _LOGGER.debug("Could not read spa metadata: %s", err)
+
     scan_interval = entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL.total_seconds())
     coordinator = ControlMySpaCoordinator(
-        hass, api, entry.data[CONF_SPA_ID], timedelta(seconds=int(scan_interval))
+        hass,
+        api,
+        spa_ids,
+        spa_meta,
+        timedelta(seconds=int(scan_interval)),
     )
     await coordinator.async_config_entry_first_refresh()
 

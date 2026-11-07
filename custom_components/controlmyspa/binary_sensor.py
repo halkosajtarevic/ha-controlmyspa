@@ -1,8 +1,6 @@
 """Binary sensors for ControlMySpa."""
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -15,34 +13,48 @@ from .const import DOMAIN
 from .coordinator import ControlMySpaCoordinator
 from .entity import ControlMySpaEntity
 
+SIMPLE = (
+    ("online", BinarySensorDeviceClass.CONNECTIVITY, lambda d: bool(d.get("isOnline"))),
+    ("panel_locked", BinarySensorDeviceClass.LOCK, lambda d: bool(d.get("isPanelLocked"))),
+    ("priming", BinarySensorDeviceClass.RUNNING, lambda d: bool(d.get("isPrimingMode"))),
+    (
+        "fault",
+        BinarySensorDeviceClass.PROBLEM,
+        lambda d: bool(d.get("currentFaultMessage")),
+    ),
+)
+
+READ_ONLY_COMPONENTS = (
+    ("OZONE", "ozone", BinarySensorDeviceClass.POWER),
+    ("CIRCULATION_PUMP", "circulation_pump", BinarySensorDeviceClass.RUNNING),
+    ("FILTER", "filter", BinarySensorDeviceClass.RUNNING),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: ControlMySpaCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities: list[BinarySensorEntity] = [
-        ControlMySpaSimpleBinary(coordinator, "online", BinarySensorDeviceClass.CONNECTIVITY,
-                                 lambda d: bool(d.get("isOnline"))),
-        ControlMySpaSimpleBinary(coordinator, "panel_locked", BinarySensorDeviceClass.LOCK,
-                                 lambda d: bool(d.get("isPanelLocked"))),
-        ControlMySpaSimpleBinary(coordinator, "priming", BinarySensorDeviceClass.RUNNING,
-                                 lambda d: bool(d.get("isPrimingMode"))),
-        ControlMySpaSimpleBinary(coordinator, "fault", BinarySensorDeviceClass.PROBLEM,
-                                 lambda d: (d.get("currentFaultMessage") or d.get("totalAlerts")) is not None
-                                 and d.get("currentFaultMessage") is not None),
-    ]
+    entities: list[BinarySensorEntity] = []
 
-    # read-only components reported by the spa
-    for component_type, label, device_class in (
-        ("OZONE", "ozone", BinarySensorDeviceClass.POWER),
-        ("CIRCULATION_PUMP", "circulation_pump", BinarySensorDeviceClass.RUNNING),
-        ("FILTER", "filter", BinarySensorDeviceClass.RUNNING),
-    ):
-        count = sum(1 for c in coordinator.data.get("components", []) if c.get("componentType") == component_type)
-        for index in range(count):
+    for spa_id in coordinator.spa_ids:
+        for key, device_class, value_fn in SIMPLE:
             entities.append(
-                ControlMySpaComponentBinary(coordinator, component_type, index, label, device_class)
+                ControlMySpaSimpleBinary(coordinator, spa_id, key, device_class, value_fn)
             )
+        dashboard = (coordinator.data or {}).get(spa_id) or {}
+        for component_type, label, device_class in READ_ONLY_COMPONENTS:
+            count = sum(
+                1
+                for c in dashboard.get("components", [])
+                if c.get("componentType") == component_type
+            )
+            for index in range(count):
+                entities.append(
+                    ControlMySpaComponentBinary(
+                        coordinator, spa_id, component_type, index, label, device_class
+                    )
+                )
 
     async_add_entities(entities)
 
@@ -50,8 +62,8 @@ async def async_setup_entry(
 class ControlMySpaSimpleBinary(ControlMySpaEntity, BinarySensorEntity):
     """A boolean derived from the dashboard payload."""
 
-    def __init__(self, coordinator: ControlMySpaCoordinator, key: str, device_class, value_fn) -> None:
-        super().__init__(coordinator, f"binary_{key}")
+    def __init__(self, coordinator, spa_id, key, device_class, value_fn) -> None:
+        super().__init__(coordinator, spa_id, f"binary_{key}")
         self._attr_translation_key = key
         self._attr_device_class = device_class
         self._value_fn = value_fn
@@ -64,8 +76,8 @@ class ControlMySpaSimpleBinary(ControlMySpaEntity, BinarySensorEntity):
 class ControlMySpaComponentBinary(ControlMySpaEntity, BinarySensorEntity):
     """State of a component that cannot be commanded (ozone, filters, circ pump)."""
 
-    def __init__(self, coordinator, component_type: str, index: int, label: str, device_class) -> None:
-        super().__init__(coordinator, f"{component_type.lower()}_{index}")
+    def __init__(self, coordinator, spa_id, component_type, index, label, device_class) -> None:
+        super().__init__(coordinator, spa_id, f"{component_type.lower()}_{index}")
         self._component_type = component_type
         self._index = index
         self._attr_name = f"{label.replace('_', ' ').title()} {index + 1}"

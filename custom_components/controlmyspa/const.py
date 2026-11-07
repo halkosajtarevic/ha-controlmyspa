@@ -10,9 +10,11 @@ REQUEST_TIMEOUT = 30
 
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"
-CONF_SPA_ID = "spa_id"
-CONF_SPA_LABEL = "spa_label"
+CONF_SPA_IDS = "spa_ids"
 CONF_SCAN_INTERVAL = "scan_interval"
+
+# legacy single-spa key, kept so older entries keep working
+CONF_SPA_ID = "spa_id"
 
 DEFAULT_SCAN_INTERVAL = timedelta(seconds=60)
 MIN_SCAN_INTERVAL = 30
@@ -20,10 +22,9 @@ MIN_SCAN_INTERVAL = 30
 MANUFACTURER = "Balboa Water Group"
 MODEL = "ControlMySpa Gateway"
 
-# The cloud API always accepts and returns temperatures in Fahrenheit.
-# Spas configured for Celsius report isCelsius=true, but some gateways report
-# Fahrenheit values while still setting the flag. A spa can never exceed ~45 C,
-# so anything above that threshold is treated as Fahrenheit regardless of the flag.
+# The cloud always accepts and returns Fahrenheit. Spas set to Celsius report
+# isCelsius=true, but some gateways send Fahrenheit numbers while still setting the
+# flag. A spa never exceeds ~45 C, so anything above that is treated as Fahrenheit.
 CELSIUS_SANITY_LIMIT = 45.0
 
 PLATFORMS = ["binary_sensor", "climate", "sensor", "switch"]

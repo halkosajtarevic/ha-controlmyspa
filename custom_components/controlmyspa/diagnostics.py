@@ -22,5 +22,6 @@ async def async_get_config_entry_diagnostics(
             "data": async_redact_data(dict(entry.data), TO_REDACT),
             "options": dict(entry.options),
         },
-        "dashboard": coordinator.data,
+        "spas": coordinator.spa_meta,
+        "dashboards": coordinator.data,
     }

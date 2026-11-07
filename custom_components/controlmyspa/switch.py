@@ -16,11 +16,11 @@ from .entity import ControlMySpaEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-# dashboard component type -> (command componentType, label, on state)
+# dashboard component type -> (command componentType, label, icon)
 SETTABLE = {
-    "PUMP": ("jet", "Pump", "HIGH"),
-    "LIGHT": ("light", "Light", "HIGH"),
-    "BLOWER": ("blower", "Blower", "HIGH"),
+    "PUMP": ("jet", "Pump", "mdi:pump"),
+    "LIGHT": ("light", "Light", "mdi:lightbulb"),
+    "BLOWER": ("blower", "Blower", "mdi:fan"),
 }
 
 
@@ -29,37 +29,31 @@ async def async_setup_entry(
 ) -> None:
     coordinator: ControlMySpaCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[SwitchEntity] = []
-    components = coordinator.data.get("components") or []
-    for component_type, (command_name, label, _on) in SETTABLE.items():
-        count = sum(1 for c in components if c.get("componentType") == component_type)
-        for index in range(count):
-            entities.append(
-                ControlMySpaSwitch(coordinator, component_type, command_name, label, index)
-            )
+
+    for spa_id in coordinator.spa_ids:
+        components = ((coordinator.data or {}).get(spa_id) or {}).get("components") or []
+        for component_type, (command_name, label, icon) in SETTABLE.items():
+            count = sum(1 for c in components if c.get("componentType") == component_type)
+            for index in range(count):
+                entities.append(
+                    ControlMySpaSwitch(
+                        coordinator, spa_id, component_type, command_name, label, icon, index
+                    )
+                )
+
     async_add_entities(entities)
 
 
 class ControlMySpaSwitch(ControlMySpaEntity, SwitchEntity):
     """A pump, light or blower that can be switched on and off."""
 
-    def __init__(
-        self,
-        coordinator: ControlMySpaCoordinator,
-        component_type: str,
-        command_name: str,
-        label: str,
-        index: int,
-    ) -> None:
-        super().__init__(coordinator, f"{component_type.lower()}_{index}")
+    def __init__(self, coordinator, spa_id, component_type, command_name, label, icon, index) -> None:
+        super().__init__(coordinator, spa_id, f"{component_type.lower()}_{index}")
         self._component_type = component_type
         self._command_name = command_name
         self._index = index
         self._attr_name = f"{label} {index + 1}"
-        self._attr_icon = {
-            "PUMP": "mdi:pump",
-            "LIGHT": "mdi:lightbulb",
-            "BLOWER": "mdi:fan",
-        }.get(component_type, "mdi:toggle-switch")
+        self._attr_icon = icon
 
     @property
     def _component(self) -> dict[str, Any]:

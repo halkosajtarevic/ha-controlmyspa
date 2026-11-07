@@ -66,7 +66,6 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
         key="software_version",
         translation_key="software_version",
         icon="mdi:chip",
-        entity_category=None,
         value_fn=lambda d: (d.get("systemInfo") or {}).get("controllerSoftwareVersion"),
     ),
     SensorEntityDescription(
@@ -83,18 +82,25 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: ControlMySpaCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(ControlMySpaSensor(coordinator, desc) for desc in SENSORS)
+    async_add_entities(
+        ControlMySpaSensor(coordinator, spa_id, description)
+        for spa_id in coordinator.spa_ids
+        for description in SENSORS
+    )
 
 
 class ControlMySpaSensor(ControlMySpaEntity, SensorEntity):
-    """One read-only value from the spa dashboard."""
+    """One read-only value from a spa dashboard."""
 
     entity_description: SensorEntityDescription
 
     def __init__(
-        self, coordinator: ControlMySpaCoordinator, description: SensorEntityDescription
+        self,
+        coordinator: ControlMySpaCoordinator,
+        spa_id: str,
+        description: SensorEntityDescription,
     ) -> None:
-        super().__init__(coordinator, f"sensor_{description.key}")
+        super().__init__(coordinator, spa_id, f"sensor_{description.key}")
         self.entity_description = description
 
     @property

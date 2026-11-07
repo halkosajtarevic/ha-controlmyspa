@@ -16,11 +16,10 @@ ControlMySpa cloud API and exposes the spa as a proper Home Assistant device.
 
 ## Requirements
 
-- A ControlMySpa account with a spa linked to it (the account you use in the
-  ControlMySpa mobile app)
-- The **CMS code** of your spa (e.g. `ABC-12345`) — printed on the gateway label and
-  shown in the app. It is only needed to pick the spa if your account has several;
-  Home Assistant names the device after it.
+- A ControlMySpa account with at least one spa linked to it — the same account you
+  use in the ControlMySpa mobile app
+
+That's all. No API key, no developer account, and no device ID or CMS code to look up.
 
 ## Installation
 
@@ -40,7 +39,8 @@ restart Home Assistant.
 *Settings → Devices & services → Add integration → ControlMySpa*
 
 1. Enter the email and password of your ControlMySpa account.
-2. If the account owns more than one spa, pick one — the list shows **CMS code (serial)**.
+2. If the account owns more than one spa, tick the ones you want. Each selected spa
+   becomes its own device, named after the spa's own name (or its serial number).
    Accounts with a single spa are configured in one step.
 
 Re-authentication is handled automatically: if the password changes, Home Assistant

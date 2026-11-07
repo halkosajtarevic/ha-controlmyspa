@@ -3,17 +3,17 @@
     "step": {
       "user": {
         "title": "ControlMySpa account",
-        "description": "Sign in with the account you use in the ControlMySpa app.",
+        "description": "Sign in with the account you use in the ControlMySpa app. No API key or device ID is needed.",
         "data": {
           "email": "Email",
           "password": "Password"
         }
       },
       "spa": {
-        "title": "Choose a spa",
-        "description": "This account controls more than one spa. Pick one by its CMS code.",
+        "title": "Select spas",
+        "description": "Tick the spas you want in Home Assistant. Each one becomes its own device.",
         "data": {
-          "spa_id": "Spa (CMS code)"
+          "spa_ids": "Spas"
         }
       },
       "reauth_confirm": {
@@ -31,7 +31,7 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "This spa is already configured.",
+      "already_configured": "This account is already configured.",
       "reauth_successful": "Re-authentication was successful."
     }
   },
@@ -46,11 +46,6 @@
     }
   },
   "entity": {
-    "climate": {
-      "spa_climate": {
-        "name": "Spa"
-      }
-    },
     "sensor": {
       "fault_message": {
         "name": "Fault"
