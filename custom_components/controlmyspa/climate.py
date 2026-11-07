@@ -85,10 +85,11 @@ class ControlMySpaClimate(ControlMySpaEntity, ClimateEntity):
 
     @property
     def preset_mode(self) -> str | None:
-        mode = self.dashboard.get("heaterMode")
-        if mode == "READY":
+        # The panel reports READY, REST or READY_REST ("ready, in rest economy").
+        mode = str(self.dashboard.get("heaterMode") or "").upper()
+        if mode.startswith("READY"):
             return PRESET_READY
-        if mode == "REST":
+        if mode.startswith("REST"):
             return PRESET_REST
         return None
 

@@ -1,0 +1,115 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ControlMySpa-Konto",
+        "description": "Melde dich mit dem Konto an, das du in der ControlMySpa-App verwendest. Kein API-Schlüssel, keine Geräte-ID nötig.",
+        "data": {
+          "email": "E-Mail",
+          "password": "Passwort"
+        }
+      },
+      "spa": {
+        "title": "Whirlpools auswählen",
+        "description": "Wähle die Whirlpools aus, die in Home Assistant erscheinen sollen. Jeder wird ein eigenes Gerät.",
+        "data": {
+          "spa_ids": "Whirlpools"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut anmelden",
+        "description": "Das Passwort für {email} ist nicht mehr gültig.",
+        "data": {
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "E-Mail oder Passwort ist falsch.",
+      "cannot_connect": "Die ControlMySpa-Cloud ist nicht erreichbar.",
+      "no_spas": "Mit diesem Konto ist kein Whirlpool verknüpft.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Dieses Konto ist bereits eingerichtet.",
+      "reauth_successful": "Die erneute Anmeldung war erfolgreich."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ControlMySpa-Optionen",
+        "data": {
+          "scan_interval": "Abfrageintervall"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fault_message": {
+        "name": "Störung",
+        "state": {
+          "none": "Keine"
+        }
+      },
+      "alerts": {
+        "name": "Warnungen"
+      },
+      "temp_range": {
+        "name": "Temperaturbereich",
+        "state": {
+          "LOW": "Niedrig",
+          "HIGH": "Hoch"
+        }
+      },
+      "heater_mode": {
+        "name": "Heizmodus",
+        "state": {
+          "REST": "Ruhemodus",
+          "READY": "Bereit"
+        }
+      },
+      "software_version": {
+        "name": "Steuerungssoftware"
+      },
+      "last_ping": {
+        "name": "Letzter Gateway-Kontakt"
+      }
+    },
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      },
+      "panel_locked": {
+        "name": "Bedienfeld gesperrt"
+      },
+      "priming": {
+        "name": "Entlüftungsmodus"
+      },
+      "fault": {
+        "name": "Störung aktiv"
+      },
+      "ozone": {
+        "name": "Ozon {number}"
+      },
+      "filter": {
+        "name": "Filter {number}"
+      },
+      "circulation_pump": {
+        "name": "Umwälzpumpe {number}"
+      }
+    },
+    "switch": {
+      "pump": {
+        "name": "Pumpe {number}"
+      },
+      "light": {
+        "name": "Licht {number}"
+      },
+      "blower": {
+        "name": "Gebläse {number}"
+      }
+    }
+  }
+}

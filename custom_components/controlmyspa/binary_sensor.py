@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .coordinator import ControlMySpaCoordinator
 from .entity import ControlMySpaEntity
+from .util import has_problem
 
 SIMPLE = (
     ("online", BinarySensorDeviceClass.CONNECTIVITY, lambda d: bool(d.get("isOnline"))),
@@ -20,7 +21,7 @@ SIMPLE = (
     (
         "fault",
         BinarySensorDeviceClass.PROBLEM,
-        lambda d: bool(d.get("currentFaultMessage")),
+        has_problem,
     ),
 )
 
@@ -80,7 +81,8 @@ class ControlMySpaComponentBinary(ControlMySpaEntity, BinarySensorEntity):
         super().__init__(coordinator, spa_id, f"{component_type.lower()}_{index}")
         self._component_type = component_type
         self._index = index
-        self._attr_name = f"{label.replace('_', ' ').title()} {index + 1}"
+        self._attr_translation_key = label
+        self._attr_translation_placeholders = {"number": str(index + 1)}
         self._attr_device_class = device_class
 
     @property

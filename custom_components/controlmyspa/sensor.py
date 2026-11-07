@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .util import fault_description, fault_details
 from .coordinator import ControlMySpaCoordinator
 from .entity import ControlMySpaEntity
 
@@ -27,7 +28,7 @@ class ControlMySpaSensorDescription(SensorEntityDescription):
 
 
 def _fault(d: dict[str, Any]) -> str:
-    return d.get("currentFaultMessage") or "none"
+    return fault_description(d)
 
 
 def _last_ping(d: dict[str, Any]) -> datetime | None:
@@ -66,7 +67,7 @@ SENSORS: tuple[ControlMySpaSensorDescription, ...] = (
         translation_key="heater_mode",
         icon="mdi:fire",
         device_class=SensorDeviceClass.ENUM,
-        options=["REST", "READY"],
+        options=["REST", "READY", "READY_REST"],
         value_fn=lambda d: d.get("heaterMode"),
     ),
     ControlMySpaSensorDescription(
@@ -113,3 +114,9 @@ class ControlMySpaSensor(ControlMySpaEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self.entity_description.value_fn(self.dashboard)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        if self.entity_description.key != "fault_message":
+            return {}
+        return fault_details(self.dashboard)

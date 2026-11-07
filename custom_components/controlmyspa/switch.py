@@ -18,9 +18,9 @@ _LOGGER = logging.getLogger(__name__)
 
 # dashboard component type -> (command componentType, label, icon)
 SETTABLE = {
-    "PUMP": ("jet", "Pump", "mdi:pump"),
-    "LIGHT": ("light", "Light", "mdi:lightbulb"),
-    "BLOWER": ("blower", "Blower", "mdi:fan"),
+    "PUMP": ("jet", "pump", "mdi:pump"),
+    "LIGHT": ("light", "light", "mdi:lightbulb"),
+    "BLOWER": ("blower", "blower", "mdi:fan"),
 }
 
 
@@ -52,7 +52,8 @@ class ControlMySpaSwitch(ControlMySpaEntity, SwitchEntity):
         self._component_type = component_type
         self._command_name = command_name
         self._index = index
-        self._attr_name = f"{label} {index + 1}"
+        self._attr_translation_key = label
+        self._attr_translation_placeholders = {"number": str(index + 1)}
         self._attr_icon = icon
 
     @property

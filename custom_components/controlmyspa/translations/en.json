@@ -48,16 +48,27 @@
   "entity": {
     "sensor": {
       "fault_message": {
-        "name": "Fault"
+        "name": "Fault",
+        "state": {
+          "none": "None"
+        }
       },
       "alerts": {
         "name": "Alerts"
       },
       "temp_range": {
-        "name": "Temperature range"
+        "name": "Temperature range",
+        "state": {
+          "LOW": "Low",
+          "HIGH": "High"
+        }
       },
       "heater_mode": {
-        "name": "Heater mode"
+        "name": "Heater mode",
+        "state": {
+          "REST": "Rest mode",
+          "READY": "Ready"
+        }
       },
       "software_version": {
         "name": "Controller software"
@@ -78,6 +89,26 @@
       },
       "fault": {
         "name": "Fault active"
+      },
+      "ozone": {
+        "name": "Ozone {number}"
+      },
+      "filter": {
+        "name": "Filter {number}"
+      },
+      "circulation_pump": {
+        "name": "Circulation pump {number}"
+      }
+    },
+    "switch": {
+      "pump": {
+        "name": "Pump {number}"
+      },
+      "light": {
+        "name": "Light {number}"
+      },
+      "blower": {
+        "name": "Blower {number}"
       }
     }
   }
