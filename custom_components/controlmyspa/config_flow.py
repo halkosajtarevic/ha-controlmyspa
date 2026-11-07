@@ -133,7 +133,7 @@ class ControlMySpaConfigFlow(ConfigFlow, domain=DOMAIN):
         self, spa_ids: list[str], primary: dict[str, Any]
     ) -> ConfigFlowResult:
         """Create one entry holding every selected spa."""
-        title = _spa_label(primary)
+        title = (primary.get("alias") or "").strip() or "Hot Tub"
         if len(spa_ids) > 1:
             title = f"ControlMySpa ({len(spa_ids)} spas)"
         return self.async_create_entry(

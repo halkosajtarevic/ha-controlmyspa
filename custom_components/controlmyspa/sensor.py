@@ -1,6 +1,7 @@
 """Sensor platform for ControlMySpa."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable
 
@@ -18,6 +19,13 @@ from .coordinator import ControlMySpaCoordinator
 from .entity import ControlMySpaEntity
 
 
+@dataclass(frozen=True, kw_only=True)
+class ControlMySpaSensorDescription(SensorEntityDescription):
+    """Sensor description with a value extractor for the spa dashboard."""
+
+    value_fn: Callable[[dict[str, Any]], Any]
+
+
 def _fault(d: dict[str, Any]) -> str:
     return d.get("currentFaultMessage") or "none"
 
@@ -32,21 +40,20 @@ def _last_ping(d: dict[str, Any]) -> datetime | None:
         return None
 
 
-SENSORS: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
+SENSORS: tuple[ControlMySpaSensorDescription, ...] = (
+    ControlMySpaSensorDescription(
         key="fault_message",
         translation_key="fault_message",
         icon="mdi:alert-circle-outline",
         value_fn=_fault,
     ),
-    SensorEntityDescription(
+    ControlMySpaSensorDescription(
         key="alerts",
         translation_key="alerts",
         icon="mdi:bell-ring-outline",
-        native_unit_of_measurement="alerts",
         value_fn=lambda d: d.get("totalAlerts"),
     ),
-    SensorEntityDescription(
+    ControlMySpaSensorDescription(
         key="temp_range",
         translation_key="temp_range",
         icon="mdi:thermometer-chevron-up",
@@ -54,7 +61,7 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
         options=["LOW", "HIGH"],
         value_fn=lambda d: d.get("tempRange"),
     ),
-    SensorEntityDescription(
+    ControlMySpaSensorDescription(
         key="heater_mode",
         translation_key="heater_mode",
         icon="mdi:fire",
@@ -62,13 +69,13 @@ SENSORS: tuple[SensorEntityDescription, ...] = (
         options=["REST", "READY"],
         value_fn=lambda d: d.get("heaterMode"),
     ),
-    SensorEntityDescription(
+    ControlMySpaSensorDescription(
         key="software_version",
         translation_key="software_version",
         icon="mdi:chip",
         value_fn=lambda d: (d.get("systemInfo") or {}).get("controllerSoftwareVersion"),
     ),
-    SensorEntityDescription(
+    ControlMySpaSensorDescription(
         key="last_ping",
         translation_key="last_ping",
         icon="mdi:clock-outline",
@@ -92,18 +99,17 @@ async def async_setup_entry(
 class ControlMySpaSensor(ControlMySpaEntity, SensorEntity):
     """One read-only value from a spa dashboard."""
 
-    entity_description: SensorEntityDescription
+    entity_description: ControlMySpaSensorDescription
 
     def __init__(
         self,
         coordinator: ControlMySpaCoordinator,
         spa_id: str,
-        description: SensorEntityDescription,
+        description: ControlMySpaSensorDescription,
     ) -> None:
         super().__init__(coordinator, spa_id, f"sensor_{description.key}")
         self.entity_description = description
 
     @property
     def native_value(self) -> Any:
-        value_fn: Callable[[dict[str, Any]], Any] = self.entity_description.value_fn  # type: ignore[attr-defined]
-        return value_fn(self.dashboard)
+        return self.entity_description.value_fn(self.dashboard)

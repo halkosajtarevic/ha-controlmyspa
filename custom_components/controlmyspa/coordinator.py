@@ -66,11 +66,16 @@ class ControlMySpaCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         return data
 
     def spa_name(self, spa_id: str) -> str:
-        """Best human-readable name for a spa (alias, else serial)."""
+        """Human name for a spa: its own name, else "Hot Tub".
+
+        The serial is only used to tell several unnamed spas apart - nobody
+        wants entities called sensor.59304_2606240040_fault.
+        """
         meta = self.spa_meta.get(spa_id) or {}
-        return (
-            meta.get("alias")
-            or meta.get("name")
-            or meta.get("serialNumber")
-            or spa_id
-        )
+        alias = (meta.get("alias") or meta.get("name") or "").strip()
+        if alias:
+            return alias
+        serial = "".join(ch for ch in str(meta.get("serialNumber") or "") if ch.isdigit())
+        if len(self.spa_ids) > 1 and len(serial) >= 4:
+            return f"Hot Tub {serial[-4:]}"
+        return "Hot Tub"
