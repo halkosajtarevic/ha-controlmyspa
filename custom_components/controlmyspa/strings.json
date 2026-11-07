@@ -1,0 +1,89 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ControlMySpa account",
+        "description": "Sign in with the account you use in the ControlMySpa app.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "spa": {
+        "title": "Choose a spa",
+        "description": "This account controls more than one spa. Pick one by its CMS code.",
+        "data": {
+          "spa_id": "Spa (CMS code)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The password for {email} is no longer valid.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Cannot reach the ControlMySpa cloud.",
+      "no_spas": "This account has no spa linked to it.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This spa is already configured.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ControlMySpa options",
+        "data": {
+          "scan_interval": "Polling interval"
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "spa_climate": {
+        "name": "Spa"
+      }
+    },
+    "sensor": {
+      "fault_message": {
+        "name": "Fault"
+      },
+      "alerts": {
+        "name": "Alerts"
+      },
+      "temp_range": {
+        "name": "Temperature range"
+      },
+      "heater_mode": {
+        "name": "Heater mode"
+      },
+      "software_version": {
+        "name": "Controller software"
+      },
+      "last_ping": {
+        "name": "Last gateway ping"
+      }
+    },
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      },
+      "panel_locked": {
+        "name": "Panel locked"
+      },
+      "priming": {
+        "name": "Priming mode"
+      },
+      "fault": {
+        "name": "Fault active"
+      }
+    }
+  }
+}

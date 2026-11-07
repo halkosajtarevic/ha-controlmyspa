@@ -1,0 +1,14 @@
+{
+  "domain": "controlmyspa",
+  "name": "ControlMySpa",
+  "codeowners": [
+    "@halkosajtarevic"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/halkosajtarevic/ha-controlmyspa",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/halkosajtarevic/ha-controlmyspa/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
