@@ -127,6 +127,10 @@ automation:
 - **Cloud only.** The gateway holds its own encrypted session to Balboa's broker; there is
   no local API to poll. If the internet or Balboa's cloud is down, the spa still runs — you
   just can't control it remotely. For offline control you need an RS-485 tap on the spa bus.
+- **Instant feedback.** A command is acknowledged by the cloud in well under a second, but the
+  spa reports the result on its next telemetry. The integration shows the requested state
+  immediately and then polls every 2 s (max 30 s) until the spa confirms it, so switches stop
+  snapping back and the new state appears within seconds instead of a polling cycle.
 - **Polling, not push.** The gateway reports roughly once a minute, so a command can take a
   polling cycle to show up in Home Assistant.
 - **Temperatures are stored in Fahrenheit** in the cloud, and the `isCelsius` flag cannot be

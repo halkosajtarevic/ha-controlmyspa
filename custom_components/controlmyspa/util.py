@@ -102,3 +102,21 @@ def has_problem(dashboard: dict[str, Any]) -> bool:
             return False
         return severity in FAULT_SEVERITIES or bool(fault.get("code"))
     return True
+
+
+def component_value(
+    data: dict[str, Any], spa_id: str, component_type: str, index: int
+) -> str | None:
+    """Read one component's value from a coordinator payload.
+
+    Used to confirm a command without waiting for the next scheduled poll.
+    """
+    dashboard = (data or {}).get(spa_id) or {}
+    components = [
+        comp
+        for comp in dashboard.get("components") or []
+        if comp.get("componentType") == component_type
+    ]
+    if index >= len(components):
+        return None
+    return str(components[index].get("value") or "").upper()

@@ -1,7 +1,9 @@
 """Data update coordinator for ControlMySpa (one or more spas)."""
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -9,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import ControlMySpaApi, ControlMySpaAuthError, ControlMySpaError
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import COMMAND_POLL_INTERVAL, COMMAND_POLL_TIMEOUT, DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,3 +81,29 @@ class ControlMySpaCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         if len(self.spa_ids) > 1 and len(serial) >= 4:
             return f"Hot Tub {serial[-4:]}"
         return "Hot Tub"
+
+    async def async_poll_until(
+        self,
+        predicate: Any,
+        timeout: float = COMMAND_POLL_TIMEOUT,
+        interval: float = COMMAND_POLL_INTERVAL,
+    ) -> bool:
+        """Refresh until ``predicate(data)`` is true, or until timeout.
+
+        A command is acknowledged by the cloud in well under a second, but the
+        spa only reports the resulting state on its next telemetry. Polling every
+        couple of seconds makes the change show up in the UI promptly instead of
+        up to a minute later -- and stops the moment the state is confirmed.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            await self.async_refresh()
+            try:
+                if predicate(self.data or {}):
+                    return True
+            except Exception:  # noqa: BLE001 - a bad predicate must not break polling
+                _LOGGER.debug("Command verification predicate failed", exc_info=True)
+                return False
+            if time.monotonic() >= deadline:
+                return False
+            await asyncio.sleep(interval)

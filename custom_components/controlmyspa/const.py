@@ -28,3 +28,9 @@ MODEL = "ControlMySpa Gateway"
 CELSIUS_SANITY_LIMIT = 45.0
 
 PLATFORMS = ["binary_sensor", "climate", "sensor", "switch"]
+
+# After a command the cloud answers at once ("SENT") but the spa itself reports
+# the new state a few seconds later. Poll briskly for a short while instead of
+# waiting for the next scheduled refresh.
+COMMAND_POLL_INTERVAL = 2.0
+COMMAND_POLL_TIMEOUT = 30.0

@@ -13,10 +13,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import DOMAIN
 from .coordinator import ControlMySpaCoordinator
 from .entity import ControlMySpaEntity
+from .util import component_value
 
 _LOGGER = logging.getLogger(__name__)
 
-# dashboard component type -> (command componentType, label, icon)
+# dashboard component type -> (command componentType, translation key, icon)
 SETTABLE = {
     "PUMP": ("jet", "pump", "mdi:pump"),
     "LIGHT": ("light", "light", "mdi:lightbulb"),
@@ -55,30 +56,66 @@ class ControlMySpaSwitch(ControlMySpaEntity, SwitchEntity):
         self._attr_translation_key = label
         self._attr_translation_placeholders = {"number": str(index + 1)}
         self._attr_icon = icon
+        self._assumed: bool | None = None
 
     @property
     def _component(self) -> dict[str, Any]:
         return self.component(self._component_type, self._index) or {}
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
+        """Show the requested state at once, then the spa's own once confirmed."""
+        if self._assumed is not None:
+            return self._assumed
         return str(self._component.get("value")).upper() in ("HIGH", "ON")
+
+    @property
+    def assumed_state(self) -> bool:
+        return self._assumed is not None
 
     @property
     def available(self) -> bool:
         return super().available and bool(self._component.get("availableValues"))
 
-    async def _async_set(self, state: str) -> None:
-        try:
-            await self.coordinator.api.async_set_component_state(
-                self._spa_id, self._command_name, self._index, state
-            )
-        except Exception as err:  # noqa: BLE001 - surfaced to the user
-            raise HomeAssistantError(f"Failed to switch {self.name}: {err}") from err
-        await self.coordinator.async_request_refresh()
-
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self._async_set("HIGH")
+        await self._async_set(True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._async_set("OFF")
+        await self._async_set(False)
+
+    async def _async_set(self, turn_on: bool) -> None:
+        command_state = "HIGH" if turn_on else "OFF"
+
+        # Optimistic: the UI reflects the intent immediately, not a minute later.
+        self._assumed = turn_on
+        self.async_write_ha_state()
+
+        try:
+            await self.coordinator.api.async_set_component_state(
+                self._spa_id, self._command_name, self._index, command_state
+            )
+        except Exception as err:  # noqa: BLE001 - surfaced to the user
+            self._assumed = None
+            self.async_write_ha_state()
+            raise HomeAssistantError(f"Failed to switch {self.name}: {err}") from err
+
+        # Verify in the background so the service call returns immediately.
+        self.hass.async_create_task(self._async_confirm(command_state))
+
+    async def _async_confirm(self, expected: str) -> None:
+        """Poll until the spa reports the expected state, then drop the guess."""
+        confirmed = await self.coordinator.async_poll_until(
+            lambda data: component_value(
+                data, self._spa_id, self._component_type, self._index
+            )
+            == expected
+        )
+        if not confirmed:
+            _LOGGER.warning(
+                "Spa did not confirm %s for %s within %ss; showing live state",
+                expected,
+                self.entity_id,
+                self.coordinator.update_interval,
+            )
+        self._assumed = None
+        self.async_write_ha_state()
