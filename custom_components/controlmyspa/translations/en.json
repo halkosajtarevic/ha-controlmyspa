@@ -59,15 +59,16 @@
       "temp_range": {
         "name": "Temperature range",
         "state": {
-          "LOW": "Low",
-          "HIGH": "High"
+          "low": "Low",
+          "high": "High"
         }
       },
       "heater_mode": {
         "name": "Heater mode",
         "state": {
-          "REST": "Rest mode",
-          "READY": "Ready"
+          "rest": "Rest mode",
+          "ready": "Ready",
+          "ready_rest": "Ready (rest economy)"
         }
       },
       "software_version": {

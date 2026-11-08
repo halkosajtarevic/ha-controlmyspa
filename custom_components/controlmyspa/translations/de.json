@@ -59,15 +59,16 @@
       "temp_range": {
         "name": "Temperaturbereich",
         "state": {
-          "LOW": "Niedrig",
-          "HIGH": "Hoch"
+          "low": "Niedrig",
+          "high": "Hoch"
         }
       },
       "heater_mode": {
         "name": "Heizmodus",
         "state": {
-          "REST": "Ruhemodus",
-          "READY": "Bereit"
+          "rest": "Ruhemodus",
+          "ready": "Bereit",
+          "ready_rest": "Bereit (Sparmodus)"
         }
       },
       "software_version": {
